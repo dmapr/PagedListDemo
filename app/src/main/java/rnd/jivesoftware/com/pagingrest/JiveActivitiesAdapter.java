@@ -14,7 +14,7 @@ public class JiveActivitiesAdapter extends PagedListAdapter<ActivityModel, Activ
 
     @Override
     public ActivityViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_list_item, parent, false);
         return new ActivityViewHolder(view);
     }
 

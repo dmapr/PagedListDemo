@@ -40,7 +40,7 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
                 models = body.list;
             }
         } catch (IOException e) {
-            Timber.e(e, "Failed with the initial load");
+            Timber.e(e, "Failed with the initial load and page size %d", pageSize);
         }
 
         return models;
@@ -57,7 +57,7 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
                 models = body.list;
             }
         } catch (IOException e) {
-            Timber.e(e, "Failed with the initial load");
+            Timber.e(e, "Failed to load after %s and page size %d", currentEndKey, pageSize);
         }
 
         return models;
@@ -74,7 +74,7 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
                 models = body.list;
             }
         } catch (IOException e) {
-            Timber.e(e, "Failed with the initial load");
+            Timber.e(e, "Failed to load before %s and page size %d", currentBeginKey, pageSize);
         }
 
         return models;
