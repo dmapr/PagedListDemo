@@ -13,6 +13,7 @@ import rnd.jivesoftware.com.pagingrest.rest.models.ActivityModel;
 import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
 
 public class ActivitiesViewModel extends ViewModel {
+    public static final int PAGE_SIZE = 15;
     public LiveData<PagedList<ActivityModel>> activitiesList;
     private ActivitiesDataSource activitiesDataSource;
 
@@ -26,8 +27,8 @@ public class ActivitiesViewModel extends ViewModel {
             }
         }.create(new Date(), new PagedList.Config.Builder()
                 .setEnablePlaceholders(false)
-                .setInitialLoadSizeHint(5)
-                .setPageSize(5)
+                .setInitialLoadSizeHint(PAGE_SIZE)
+                .setPageSize(PAGE_SIZE)
                 .build()
         );
     }

@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 
 import java.text.DateFormat;
 
@@ -36,6 +37,7 @@ public class ActivityViewHolder extends RecyclerView.ViewHolder {
         Glide.with(actorAvatar)
                 .asBitmap()
                 .load(activityModel.actor.image.url)
+                .apply(RequestOptions.circleCropTransform())
                 .into(actorAvatar);
     }
 }

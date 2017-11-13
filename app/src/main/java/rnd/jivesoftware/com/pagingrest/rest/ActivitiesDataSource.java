@@ -5,25 +5,22 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import retrofit2.Response;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivitiesModel;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivityModel;
 import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
+import rnd.jivesoftware.com.pagingrest.util.DateUtil;
 import timber.log.Timber;
 
 public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
     private final JiveService jiveService;
-    private final SimpleDateFormat dateFormat;
 
     public ActivitiesDataSource(JiveService jiveService) {
         this.jiveService = jiveService;
-        dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ENGLISH);
     }
 
     @NonNull
@@ -54,7 +51,7 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
     public List<ActivityModel> loadAfter(@NonNull Date currentEndKey, int pageSize) {
         List<ActivityModel> models = Collections.emptyList();
         try {
-            Response<ActivitiesModel> response = jiveService.getOlderActivities(pageSize, toIso8601(currentEndKey)).execute();
+            Response<ActivitiesModel> response = jiveService.getOlderActivities(pageSize, DateUtil.toISO8601(currentEndKey)).execute();
             ActivitiesModel body = response.body();
             if (body != null) {
                 models = body.list;
@@ -71,7 +68,7 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
     public List<ActivityModel> loadBefore(@NonNull Date currentBeginKey, int pageSize) {
         List<ActivityModel> models = Collections.emptyList();
         try {
-            Response<ActivitiesModel> response = jiveService.getNewerActivities(pageSize, toIso8601(currentBeginKey)).execute();
+            Response<ActivitiesModel> response = jiveService.getNewerActivities(pageSize, DateUtil.toISO8601(currentBeginKey)).execute();
             ActivitiesModel body = response.body();
             if (body != null) {
                 models = body.list;
@@ -83,7 +80,4 @@ public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
         return models;
     }
 
-    private String toIso8601(Date date) {
-        return dateFormat.format(date);
-    }
 }
