@@ -5,12 +5,15 @@ import android.arch.lifecycle.ViewModelProvider;
 
 import java.lang.reflect.InvocationTargetException;
 
+import javax.inject.Inject;
+
 import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
 import timber.log.Timber;
 
 public class PeopleViewModelFactory implements ViewModelProvider.Factory {
     private final JiveService jiveService;
 
+    @Inject
     public PeopleViewModelFactory(JiveService jiveService) {
         this.jiveService = jiveService;
     }

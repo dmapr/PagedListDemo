@@ -5,9 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import javax.inject.Inject;
+
 import rnd.jivesoftware.com.pagingrest.rest.models.PersonModel;
 
 public class JivePeopleAdapter extends PagedListAdapter<PersonModel, PersonViewHolder> {
+    @Inject
     public JivePeopleAdapter() {
         super(PersonModel.DIFF_CALLBACK);
     }

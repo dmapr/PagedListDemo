@@ -1,7 +1,6 @@
 package rnd.jivesoftware.com.pagingrest;
 
 import android.arch.lifecycle.Observer;
-import android.arch.lifecycle.ViewModelProviders;
 import android.arch.paging.PagedList;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -10,7 +9,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -18,22 +16,25 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import javax.inject.Inject;
+
+import dagger.Lazy;
+import dagger.android.support.DaggerAppCompatActivity;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivityModel;
 import rnd.jivesoftware.com.pagingrest.rest.models.PersonModel;
-import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
 
-public class PagingDemoActivity extends AppCompatActivity
+public class PagingDemoActivity extends DaggerAppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private JiveService jiveService;
-    private ActivitiesViewModel activitiesViewModel;
-    private PeopleViewModel peopleViewModel;
-    private JiveActivitiesAdapter jiveActivitiesAdapter;
-    private JivePeopleAdapter jivePeopleAdapter;
+    // Important: the injection happens before onCreate is processed
+    // Therefore we need to inject a Lazy ViewModel, otherwise the LiveData framework
+    // will not initialize properly in time
+    @Inject Lazy<ActivitiesViewModel> activitiesViewModel;
+    @Inject Lazy<PeopleViewModel> peopleViewModel;
+
+    @Inject JiveActivitiesAdapter jiveActivitiesAdapter;
+    @Inject JivePeopleAdapter jivePeopleAdapter;
+
     private RecyclerView recyclerView;
 
     private int currentNavSelection = R.id.nav_activity;
@@ -51,10 +52,10 @@ public class PagingDemoActivity extends AppCompatActivity
             public void onRefresh() {
                 switch(currentNavSelection) {
                     case R.id.nav_activity:
-                        activitiesViewModel.reload();
+                        activitiesViewModel.get().reload();
                         break;
                     case R.id.nav_people:
-                        peopleViewModel.reload();
+                        peopleViewModel.get().reload();
                         break;
                 }
             }
@@ -69,18 +70,11 @@ public class PagingDemoActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        initJiveService();
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        jiveActivitiesAdapter = new JiveActivitiesAdapter();
-        jivePeopleAdapter = new JivePeopleAdapter();
-
-        activitiesViewModel = ViewModelProviders.of(this, new ActivitiesViewModelFactory(jiveService)).get(ActivitiesViewModel.class);
-        peopleViewModel = ViewModelProviders.of(this, new PeopleViewModelFactory(jiveService)).get(PeopleViewModel.class);
-
-        activitiesViewModel.activitiesList.observe(this, new Observer<PagedList<ActivityModel>>() {
+        activitiesViewModel.get().activitiesList.observe(this, new Observer<PagedList<ActivityModel>>() {
             @Override
             public void onChanged(@Nullable PagedList<ActivityModel> activityModels) {
                 jiveActivitiesAdapter.setList(activityModels);
@@ -88,7 +82,7 @@ public class PagingDemoActivity extends AppCompatActivity
             }
         });
 
-        peopleViewModel.peopleList.observe(this, new Observer<PagedList<PersonModel>>() {
+        peopleViewModel.get().peopleList.observe(this, new Observer<PagedList<PersonModel>>() {
             @Override
             public void onChanged(@Nullable PagedList<PersonModel> personModels) {
                 jivePeopleAdapter.setList(personModels);
@@ -101,7 +95,7 @@ public class PagingDemoActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -153,19 +147,4 @@ public class PagingDemoActivity extends AppCompatActivity
         return true;
     }
 
-    private void initJiveService() {
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor
-                        .setLevel(HttpLoggingInterceptor.Level.BODY)
-                )
-                .build();
-
-        jiveService = new Retrofit.Builder()
-                .baseUrl("https://community.jivesoftware.com/")
-                .client(okHttpClient)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build()
-                .create(JiveService.class);
-    }
 }
