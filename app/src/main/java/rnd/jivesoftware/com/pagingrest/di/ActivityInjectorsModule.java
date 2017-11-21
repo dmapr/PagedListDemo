@@ -7,6 +7,6 @@ import rnd.jivesoftware.com.pagingrest.PagingDemoActivity;
 @Module
 public abstract class ActivityInjectorsModule {
     @PerActivity
-    @ContributesAndroidInjector(modules = {PagingDemoActivityModule.class})
+    @ContributesAndroidInjector(modules = {PagingDemoActivityModule.class, FragmentInjectorsModule.class})
     public abstract PagingDemoActivity mainActivity();
 }
