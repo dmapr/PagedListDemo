@@ -1,14 +1,14 @@
 package rnd.jivesoftware.com.pagingrest.rest;
 
-import android.arch.paging.KeyedDataSource;
+import android.arch.paging.PageKeyedDataSource;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivitiesModel;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivityModel;
@@ -16,68 +16,87 @@ import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
 import rnd.jivesoftware.com.pagingrest.util.DateUtil;
 import timber.log.Timber;
 
-public class ActivitiesDataSource extends KeyedDataSource<Date, ActivityModel> {
+public class ActivitiesDataSource extends PageKeyedDataSource<Date, ActivityModel> {
     private final JiveService jiveService;
 
     public ActivitiesDataSource(JiveService jiveService) {
         this.jiveService = jiveService;
     }
 
-    @NonNull
     @Override
-    public Date getKey(@NonNull ActivityModel item) {
-        return item.jive.collectionUpdated;
-    }
-
-    @Nullable
-    @Override
-    public List<ActivityModel> loadInitial(int pageSize) {
-        List<ActivityModel> models = Collections.emptyList();
-        try {
-            Response<ActivitiesModel> response = jiveService.getActivities(pageSize).execute();
-            ActivitiesModel body = response.body();
-            if (body != null) {
-                models = body.list;
+    public void loadInitial(@NonNull final LoadInitialParams<Date> params, @NonNull final LoadInitialCallback<Date, ActivityModel> callback) {
+        jiveService.getActivities(params.requestedLoadSize).enqueue(new Callback<ActivitiesModel>() {
+            @Override
+            public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
+                ActivitiesModel body = response.body();
+                List<ActivityModel> models = Collections.emptyList();
+                Date newerDate = null;
+                Date olderDate = null;
+                if (body != null) {
+                    models = body.list;
+                    if (!models.isEmpty()) {
+                        olderDate = models.get(models.size() - 1).jive.collectionUpdated;
+                        newerDate = models.get(0).jive.collectionUpdated;
+                    }
+                }
+                callback.onResult(models, olderDate, newerDate);
             }
-        } catch (IOException e) {
-            Timber.e(e, "Failed with the initial load and page size %d", pageSize);
-        }
 
-        return models;
-    }
-
-    @Nullable
-    @Override
-    public List<ActivityModel> loadAfter(@NonNull Date currentEndKey, int pageSize) {
-        List<ActivityModel> models = Collections.emptyList();
-        try {
-            Response<ActivitiesModel> response = jiveService.getOlderActivities(pageSize, DateUtil.toISO8601(currentEndKey)).execute();
-            ActivitiesModel body = response.body();
-            if (body != null) {
-                models = body.list;
+            @Override
+            public void onFailure(@NonNull Call<ActivitiesModel> call, @NonNull Throwable t) {
+                Timber.e(t,"Failed to load activities with %s", params);
+                callback.onResult(Collections.<ActivityModel>emptyList(), null, null);
             }
-        } catch (IOException e) {
-            Timber.e(e, "Failed to load after %s and page size %d", currentEndKey, pageSize);
-        }
-
-        return models;
+        });
     }
 
-    @Nullable
     @Override
-    public List<ActivityModel> loadBefore(@NonNull Date currentBeginKey, int pageSize) {
-        List<ActivityModel> models = Collections.emptyList();
-        try {
-            Response<ActivitiesModel> response = jiveService.getNewerActivities(pageSize, DateUtil.toISO8601(currentBeginKey)).execute();
-            ActivitiesModel body = response.body();
-            if (body != null) {
-                models = body.list;
+    public void loadBefore(@NonNull final LoadParams<Date> params, @NonNull final LoadCallback<Date, ActivityModel> callback) {
+        jiveService.getNewerActivities(params.requestedLoadSize, DateUtil.toISO8601(params.key)).enqueue(new Callback<ActivitiesModel>() {
+            @Override
+            public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
+                ActivitiesModel body = response.body();
+                List<ActivityModel> models = Collections.emptyList();
+                Date newerDate = null;
+                if (body != null) {
+                    models = body.list;
+                    if (!models.isEmpty()) {
+                        newerDate = models.get(0).jive.collectionUpdated;
+                    }
+                }
+                callback.onResult(models, newerDate);
             }
-        } catch (IOException e) {
-            Timber.e(e, "Failed to load before %s and page size %d", currentBeginKey, pageSize);
-        }
 
-        return models;
+            @Override
+            public void onFailure(@NonNull Call<ActivitiesModel> call, @NonNull Throwable t) {
+                Timber.e(t,"Failed to load activities with %s", params);
+                callback.onResult(Collections.<ActivityModel>emptyList(), null);
+            }
+        });
     }
 
+    @Override
+    public void loadAfter(@NonNull final LoadParams<Date> params, @NonNull final LoadCallback<Date, ActivityModel> callback) {
+        jiveService.getOlderActivities(params.requestedLoadSize, DateUtil.toISO8601(params.key)).enqueue(new Callback<ActivitiesModel>() {
+            @Override
+            public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
+                ActivitiesModel body = response.body();
+                List<ActivityModel> models = Collections.emptyList();
+                Date olderDate = null;
+                if (body != null) {
+                    models = body.list;
+                    if (!models.isEmpty()) {
+                        olderDate = models.get(models.size() - 1).jive.collectionUpdated;
+                    }
+                }
+                callback.onResult(models, olderDate);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ActivitiesModel> call, @NonNull Throwable t) {
+                Timber.e(t,"Failed to load activities with %s", params);
+                callback.onResult(Collections.<ActivityModel>emptyList(), null);
+            }
+        });
+    }
 }
