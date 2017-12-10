@@ -1,6 +1,7 @@
 package rnd.jivesoftware.com.pagingrest.di;
 
 import android.arch.lifecycle.ViewModelProviders;
+import android.support.v4.app.FragmentManager;
 
 import dagger.Module;
 import dagger.Provides;
@@ -22,5 +23,11 @@ public class PagingDemoActivityModule {
     @PerActivity
     PeopleViewModel peopleViewModel(PagingDemoActivity activity, PeopleViewModelFactory factory) {
         return ViewModelProviders.of(activity, factory).get(PeopleViewModel.class);
+    }
+
+    @Provides
+    @PerActivity
+    FragmentManager fragmentManager(PagingDemoActivity activity) {
+        return activity.getSupportFragmentManager();
     }
 }
