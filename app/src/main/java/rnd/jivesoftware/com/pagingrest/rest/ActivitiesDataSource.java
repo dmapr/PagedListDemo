@@ -1,10 +1,10 @@
 package rnd.jivesoftware.com.pagingrest.rest;
 
 import android.arch.paging.PageKeyedDataSource;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -13,10 +13,9 @@ import retrofit2.Response;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivitiesModel;
 import rnd.jivesoftware.com.pagingrest.rest.models.ActivityModel;
 import rnd.jivesoftware.com.pagingrest.rest.services.JiveService;
-import rnd.jivesoftware.com.pagingrest.util.DateUtil;
 import timber.log.Timber;
 
-public class ActivitiesDataSource extends PageKeyedDataSource<Date, ActivityModel> {
+public class ActivitiesDataSource extends PageKeyedDataSource<String, ActivityModel> {
     private final JiveService jiveService;
 
     public ActivitiesDataSource(JiveService jiveService) {
@@ -24,22 +23,28 @@ public class ActivitiesDataSource extends PageKeyedDataSource<Date, ActivityMode
     }
 
     @Override
-    public void loadInitial(@NonNull final LoadInitialParams<Date> params, @NonNull final LoadInitialCallback<Date, ActivityModel> callback) {
+    public void loadInitial(@NonNull final LoadInitialParams<String> params, @NonNull final LoadInitialCallback<String, ActivityModel> callback) {
         jiveService.getActivities(params.requestedLoadSize).enqueue(new Callback<ActivitiesModel>() {
             @Override
             public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
                 ActivitiesModel body = response.body();
                 List<ActivityModel> models = Collections.emptyList();
-                Date newerDate = null;
-                Date olderDate = null;
+                String before = null;
+                String after = null;
                 if (body != null) {
                     models = body.list;
-                    if (!models.isEmpty()) {
-                        olderDate = models.get(models.size() - 1).jive.collectionUpdated;
-                        newerDate = models.get(0).jive.collectionUpdated;
+                    if (body.links != null) {
+                        if (body.links.next != null) {
+                            Uri next = Uri.parse(body.links.next);
+                            before = next.getQueryParameter("before");
+                        }
+                        if (body.links.previous != null) {
+                            Uri next = Uri.parse(body.links.previous);
+                            after = next.getQueryParameter("after");
+                        }
                     }
-                }
-                callback.onResult(models, olderDate, newerDate);
+                 }
+                callback.onResult(models, before, after);
             }
 
             @Override
@@ -51,20 +56,21 @@ public class ActivitiesDataSource extends PageKeyedDataSource<Date, ActivityMode
     }
 
     @Override
-    public void loadBefore(@NonNull final LoadParams<Date> params, @NonNull final LoadCallback<Date, ActivityModel> callback) {
-        jiveService.getNewerActivities(params.requestedLoadSize, DateUtil.toISO8601(params.key)).enqueue(new Callback<ActivitiesModel>() {
+    public void loadBefore(@NonNull final LoadParams<String> params, @NonNull final LoadCallback<String, ActivityModel> callback) {
+        jiveService.getNewerActivities(params.requestedLoadSize, params.key).enqueue(new Callback<ActivitiesModel>() {
             @Override
             public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
                 ActivitiesModel body = response.body();
                 List<ActivityModel> models = Collections.emptyList();
-                Date newerDate = null;
+                String after = null;
                 if (body != null) {
                     models = body.list;
-                    if (!models.isEmpty()) {
-                        newerDate = models.get(0).jive.collectionUpdated;
+                    if (body.links != null && body.links.previous != null) {
+                        Uri next = Uri.parse(body.links.previous);
+                        after = next.getQueryParameter("after");
                     }
                 }
-                callback.onResult(models, newerDate);
+                callback.onResult(models, after);
             }
 
             @Override
@@ -76,20 +82,21 @@ public class ActivitiesDataSource extends PageKeyedDataSource<Date, ActivityMode
     }
 
     @Override
-    public void loadAfter(@NonNull final LoadParams<Date> params, @NonNull final LoadCallback<Date, ActivityModel> callback) {
-        jiveService.getOlderActivities(params.requestedLoadSize, DateUtil.toISO8601(params.key)).enqueue(new Callback<ActivitiesModel>() {
+    public void loadAfter(@NonNull final LoadParams<String> params, @NonNull final LoadCallback<String, ActivityModel> callback) {
+        jiveService.getOlderActivities(params.requestedLoadSize, params.key).enqueue(new Callback<ActivitiesModel>() {
             @Override
             public void onResponse(@NonNull Call<ActivitiesModel> call, @NonNull Response<ActivitiesModel> response) {
                 ActivitiesModel body = response.body();
                 List<ActivityModel> models = Collections.emptyList();
-                Date olderDate = null;
+                String before = null;
                 if (body != null) {
                     models = body.list;
-                    if (!models.isEmpty()) {
-                        olderDate = models.get(models.size() - 1).jive.collectionUpdated;
+                    if (body.links != null && body.links.next != null) {
+                        Uri next = Uri.parse(body.links.next);
+                        before = next.getQueryParameter("before");
                     }
                 }
-                callback.onResult(models, olderDate);
+                callback.onResult(models, before);
             }
 
             @Override

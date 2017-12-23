@@ -4,4 +4,5 @@ import java.util.List;
 
 public class ActivitiesModel {
     public List<ActivityModel> list;
+    public LinksModel links;
 }
